@@ -1,14 +1,36 @@
-# 1️⃣ Obtém a versão atual
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - checkout: self
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '18.x'
+    displayName: 'Instalar Node.js'
+
+  - script: npm install
+    displayName: 'Instalar dependências'
+
+  - script: npm run build
+    displayName: 'Build da aplicação'
+
+  # 1️⃣ Obtém a versão atual do XML
   - script: |
-      VERSION_FILE="version.json"
-      if [ -f "$VERSION_FILE" ]; then
-        CURRENT_VERSION=$(jq -r '.version' "$VERSION_FILE")
+      VERSION_FILE="out/plugin-react-*.xml"
+      if ls $VERSION_FILE 1> /dev/null 2>&1; then
+        CURRENT_VERSION=$(ls $VERSION_FILE | grep -oP 'plugin-react-\K[0-9]+\.[0-9]+\.[0-9]+')
       else
         CURRENT_VERSION="1.0.0"
       fi
       echo "Versão atual: $CURRENT_VERSION"
       echo "##vso[task.setvariable variable=CURRENT_VERSION]$CURRENT_VERSION"
-    displayName: 'Obter versão atual do version.json'
+    displayName: 'Obter versão do arquivo XML'
 
   # 2️⃣ Gera a nova versão
   - script: |
@@ -19,11 +41,15 @@
       echo "##vso[task.setvariable variable=NEW_VERSION]$NEW_VERSION"
     displayName: 'Gerar nova versão'
 
-  # 3️⃣ Atualiza o version.json
+  # 3️⃣ Atualiza o arquivo XML
   - script: |
       TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-      echo "{ \"version\": \"$(NEW_VERSION)\", \"timestamp\": \"$TIMESTAMP\" }" > version.json
-    displayName: 'Atualizar version.json com nova versão'
+      NEW_FILE="out/plugin-react-$(NEW_VERSION).xml"
+      echo "<plugin>" > $NEW_FILE
+      echo "  <version>$(NEW_VERSION)</version>" >> $NEW_FILE
+      echo "  <timestamp>$TIMESTAMP</timestamp>" >> $NEW_FILE
+      echo "</plugin>" >> $NEW_FILE
+    displayName: 'Atualizar arquivo XML com nova versão'
 
   # Copia o build para a pasta /out com a nova versão
   - script: |
@@ -35,7 +61,7 @@
   - script: |
       git config --global user.email "$(Build.RequestedFor)@yourdomain.com"
       git config --global user.name "$(Build.RequestedFor)"
-      git add out/ version.json
+      git add out/
       git commit -m "Gerando nova versão do build: $(NEW_VERSION) - Commit feito por $(Build.RequestedFor)"
       git push origin main
     displayName: 'Commit e push da nova versão'
