@@ -1,196 +1,43 @@
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validação de Distância</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-        }
-        .fade-in {
-            animation: fadeIn 1s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-        .bounce {
-            animation: bounce 1s infinite;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-30px);
-            }
-            60% {
-                transform: translateY(-15px);
-            }
-        }
-        .slide-in {
-            animation: slideIn 0.5s ease-in-out;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        .pulse {
-            animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
-        @keyframes shake {
-            0%, 100% {
-                transform: translateX(0);
-            }
-            25% {
-                transform: translateX(-10px);
-            }
-            50% {
-                transform: translateX(10px);
-            }
-            75% {
-                transform: translateX(-10px);
-            }
-        }
-    </style>
-</head>
-<body class="bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center min-h-screen p-4">
-    <div id="root" class="w-full max-w-md"></div>
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+# 1️⃣ Obtém a versão atual
+  - script: |
+      VERSION_FILE="version.json"
+      if [ -f "$VERSION_FILE" ]; then
+        CURRENT_VERSION=$(jq -r '.version' "$VERSION_FILE")
+      else
+        CURRENT_VERSION="1.0.0"
+      fi
+      echo "Versão atual: $CURRENT_VERSION"
+      echo "##vso[task.setvariable variable=CURRENT_VERSION]$CURRENT_VERSION"
+    displayName: 'Obter versão atual do version.json'
 
-        function App() {
-            const [userCoords, setUserCoords] = useState(null);
-            const [isWithinDistance, setIsWithinDistance] = useState(false);
-            const [validationMessage, setValidationMessage] = useState('');
+  # 2️⃣ Gera a nova versão
+  - script: |
+      BUILD_NUMBER=$(echo $(CURRENT_VERSION) | awk -F. '{print $3}')
+      NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+      NEW_VERSION=$(echo $(CURRENT_VERSION) | awk -F. '{print $1"."$2}')".$NEW_BUILD_NUMBER"
+      echo "Nova versão: $NEW_VERSION"
+      echo "##vso[task.setvariable variable=NEW_VERSION]$NEW_VERSION"
+    displayName: 'Gerar nova versão'
 
-            const clientCoords = { latitude: -23.550520, longitude: -46.633308 }; // Mocked client coordinates
-            const clientInfo = {
-                nome: "Cliente Exemplo",
-                ordem: "12345",
-                endereco: "Rua Exemplo, 123, São Paulo, SP"
-            };
+  # 3️⃣ Atualiza o version.json
+  - script: |
+      TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+      echo "{ \"version\": \"$(NEW_VERSION)\", \"timestamp\": \"$TIMESTAMP\" }" > version.json
+    displayName: 'Atualizar version.json com nova versão'
 
-            useEffect(() => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        setUserCoords({
-                            latitude: position.coords.latitude.toFixed(6),
-                            longitude: position.coords.longitude.toFixed(6)
-                        });
-                    });
-                }
-            }, []);
+  # Copia o build para a pasta /out com a nova versão
+  - script: |
+      mkdir -p out/build-$(NEW_VERSION)
+      cp -r dist/* out/build-$(NEW_VERSION)
+    displayName: 'Salvar build na pasta /out'
 
-            useEffect(() => {
-                if (userCoords) {
-                    const distance = calculateDistance(userCoords, clientCoords);
-                    setIsWithinDistance(distance <= 300);
-                }
-            }, [userCoords]);
-
-            function calculateDistance(coords1, coords2) {
-                const R = 6371e3; // metres
-                const φ1 = coords1.latitude * Math.PI/180;
-                const φ2 = coords2.latitude * Math.PI/180;
-                const Δφ = (coords2.latitude - coords1.latitude) * Math.PI/180;
-                const Δλ = (coords2.longitude - coords1.longitude) * Math.PI/180;
-
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                          Math.cos(φ1) * Math.cos(φ2) *
-                          Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-                const distance = R * c; // in metres
-                return distance;
-            }
-
-            function handleValidation() {
-                setValidationMessage(''); // Clear previous validation message
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const newCoords = {
-                            latitude: position.coords.latitude.toFixed(6),
-                            longitude: position.coords.longitude.toFixed(6)
-                        };
-                        setUserCoords(newCoords);
-                        const distance = calculateDistance(newCoords, clientCoords);
-                        setIsWithinDistance(distance <= 300);
-                        setValidationMessage(distance <= 300 ? 'Você está dentro de 300 metros do cliente.' : 'Você está fora de 300 metros do cliente.');
-                    });
-                }
-            }
-
-            return (
-                <div className="bg-white p-8 rounded-lg shadow-lg fade-in w-full">
-                    <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Validação de Distância</h1>
-                    <div className="mb-4 border p-4 rounded-lg">
-                        <label className="block text-gray-700 font-bold mb-2">Nome do Cliente:</label>
-                        <p className="text-gray-600">{clientInfo.nome}</p>
-                    </div>
-                    <div className="mb-4 border p-4 rounded-lg">
-                        <label className="block text-gray-700 font-bold mb-2">Ordem:</label>
-                        <p className="text-gray-600">{clientInfo.ordem}</p>
-                    </div>
-                    <div className="mb-4 border p-4 rounded-lg">
-                        <label className="block text-gray-700 font-bold mb-2">Endereço:</label>
-                        <p className="text-gray-600">{clientInfo.endereco}</p>
-                    </div>
-                    <div className="mb-4 border p-4 rounded-lg">
-                        <label className="block text-gray-700 font-bold mb-2">Coordenadas do Usuário:</label>
-                        <p className="text-gray-600">{userCoords ? `Latitude: ${userCoords.latitude}, Longitude: ${userCoords.longitude}` : 'Obtendo coordenadas...'}</p>
-                    </div>
-                    {validationMessage && (
-                        <div className={`mt-4 text-center slide-in ${isWithinDistance ? 'text-green-500' : 'text-red-500'}`}>
-                            <p className={isWithinDistance ? 'pulse' : 'shake'}>{validationMessage}</p>
-                            {isWithinDistance ? (
-                                <i className="fas fa-check-circle text-4xl text-green-500 pulse"></i>
-                            ) : (
-                                <i className="fas fa-times-circle text-4xl text-red-500 shake"></i>
-                            )}
-                        </div>
-                    )}
-                    <button 
-                        className={`w-full py-2 rounded-lg text-white ${isWithinDistance ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} transition duration-300 ease-in-out transform hover:scale-105 mt-4`} 
-                        onClick={handleValidation}
-                    >
-                        Validar
-                    </button>
-                </div>
-            );
-        }
-
-        ReactDOM.render(<App />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+  # Faz commit das alterações e envia para o repositório
+  - script: |
+      git config --global user.email "$(Build.RequestedFor)@yourdomain.com"
+      git config --global user.name "$(Build.RequestedFor)"
+      git add out/ version.json
+      git commit -m "Gerando nova versão do build: $(NEW_VERSION) - Commit feito por $(Build.RequestedFor)"
+      git push origin main
+    displayName: 'Commit e push da nova versão'
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
