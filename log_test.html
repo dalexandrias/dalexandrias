@@ -1,10 +1,12 @@
-git stash push -m "stash message" --include-untracked -- out_build/*
-git clean -fd --exclude=out_build/
-git fetch
-git checkout name_branch
-git pull --rebase origin name_branch
-mkdir -p out_build  # Garante que a pasta exista antes de aplicar o stash
-git stash pop
-git add -f out_build/plugin-cerca-eletronica-$(NEW_VERSION).xml
-git commit -m "message_commit"
-git push origin name_branch
+- script: |
+        # Pega o arquivo mais recente
+        LATEST_FILE=$(ls -t out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | head -n 1)
+        if [ -f "$LATEST_FILE" ]; then
+          CURRENT_VERSION=$(echo "$LATEST_FILE" | grep -oP 'plugin-cerca-eletronica-\K[0-9]+\.[0-9]+\.[0-9]+')
+        else
+          CURRENT_VERSION="1.0.0"
+        fi
+        echo "Versão atual detectada: $CURRENT_VERSION"
+        echo "##vso[task.setvariable variable=CURRENT_VERSION]$CURRENT_VERSION"
+      displayName: 'Obter versao atual'
+      continueOnError: false
