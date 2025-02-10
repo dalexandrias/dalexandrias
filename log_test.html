@@ -1,15 +1,26 @@
 - script: |
-        XML_FILES=$(ls -t out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | tail -n +6)
-        ZIP_FILES=$(ls -t out_build/plugin-cerca-eletronica-*.zip 2>/dev/null | tail -n +6)
-        if [ -n "$XML_FILES" ] || [ -n "$ZIP_FILES" ]; then
-          echo "Removendo versões antigas:"
-          echo "$XML_FILES"
-          rm -f $XML_FILES
- 
-          echo "$ZIP_FILES"
-          rm -f $ZIP_FILES
-        else
-          echo "Nenhuma versão antiga para remover."
-        fi
-      displayName: 'Remover versões antigas (manter últimas 5)'
-      continueOnError: false
+    # Garante que a pasta existe
+    mkdir -p out_build
+
+    # Lista os arquivos corretamente ordenados por versão
+    XML_FILES=$(ls out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | sort -V | head -n -5)
+    ZIP_FILES=$(ls out_build/plugin-cerca-eletronica-*.zip 2>/dev/null | sort -V | head -n -5)
+
+    # Verifica se há arquivos antigos para remover
+    if [ -n "$XML_FILES" ] || [ -n "$ZIP_FILES" ]; then
+      echo "Removendo versões antigas:"
+
+      if [ -n "$XML_FILES" ]; then
+        echo "$XML_FILES"
+        rm -f $XML_FILES
+      fi
+
+      if [ -n "$ZIP_FILES" ]; then
+        echo "$ZIP_FILES"
+        rm -f $ZIP_FILES
+      fi
+    else
+      echo "Nenhuma versão antiga para remover."
+    fi
+  displayName: 'Remover versões antigas (manter últimas 5)'
+  continueOnError: false
