@@ -1,13 +1,15 @@
 - script: |
-    # Pega o arquivo mais recente ordenando corretamente as versões
-    LATEST_FILE=$(ls -1v out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | tail -n 1)
-    if [ -f "$LATEST_FILE" ]; then
-      # Usando uma expressão regular para pegar a versão
-      CURRENT_VERSION=$(echo "$LATEST_FILE" | sed -E 's/.*plugin-cerca-eletronica-([0-9]+\.[0-9]+\.[0-9]+)\.xml/\1/')
-    else
-      CURRENT_VERSION="1.0.0"
-    fi
-    echo "Versão atual detectada: $CURRENT_VERSION"
-    echo "##vso[task.setvariable variable=CURRENT_VERSION]$CURRENT_VERSION"
-  displayName: 'Obter versao atual'
-  continueOnError: false
+        XML_FILES=$(ls -t out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | tail -n +6)
+        ZIP_FILES=$(ls -t out_build/plugin-cerca-eletronica-*.zip 2>/dev/null | tail -n +6)
+        if [ -n "$XML_FILES" ] || [ -n "$ZIP_FILES" ]; then
+          echo "Removendo versões antigas:"
+          echo "$XML_FILES"
+          rm -f $XML_FILES
+ 
+          echo "$ZIP_FILES"
+          rm -f $ZIP_FILES
+        else
+          echo "Nenhuma versão antiga para remover."
+        fi
+      displayName: 'Remover versões antigas (manter últimas 5)'
+      continueOnError: false
