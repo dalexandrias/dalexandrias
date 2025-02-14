@@ -1,26 +1,9 @@
 - script: |
-    # Garante que a pasta existe
-    mkdir -p out_build
+        cp -r out/plugin-react-0.0.0.xml out_build/plugin-cerca-eletronica-$(NEW_VERSION).xml
+        cp -r out/plugin-react-0.0.0.zip out_build/plugin-cerca-eletronica-$(NEW_VERSION).zip
 
-    # Lista os arquivos corretamente ordenados por versão
-    XML_FILES=$(ls out_build/plugin-cerca-eletronica-*.xml 2>/dev/null | sort -V | head -n -5)
-    ZIP_FILES=$(ls out_build/plugin-cerca-eletronica-*.zip 2>/dev/null | sort -V | head -n -5)
-
-    # Verifica se há arquivos antigos para remover
-    if [ -n "$XML_FILES" ] || [ -n "$ZIP_FILES" ]; then
-      echo "Removendo versões antigas:"
-
-      if [ -n "$XML_FILES" ]; then
-        echo "$XML_FILES"
-        rm -f $XML_FILES
-      fi
-
-      if [ -n "$ZIP_FILES" ]; then
-        echo "$ZIP_FILES"
-        rm -f $ZIP_FILES
-      fi
-    else
-      echo "Nenhuma versão antiga para remover."
-    fi
-  displayName: 'Remover versões antigas (manter últimas 5)'
-  continueOnError: false
+        echo "Arquivos atualizados para a versao: $NEW_VERSION"
+        echo "plugin-cerca-eletronica-$(NEW_VERSION).xml"
+        echo "plugin-cerca-eletronica-$(NEW_VERSION).zip"
+      displayName: 'Atualizar arquivo com nova versão'
+      continueOnError: false
