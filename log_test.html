@@ -1,7 +1,8 @@
 - script: |
         cp -r out/plugin-react-0.0.0.xml out_build/plugin-cerca-eletronica-$(NEW_VERSION).xml
         cp -r out/plugin-react-0.0.0.zip out_build/plugin-cerca-eletronica-$(NEW_VERSION).zip
-
+        # Atualizar o campo "version" no package.json usando sed
+        sed -i 's/"version": "[^"]*"/"version": "$(NEW_VERSION)"/' package.json
         echo "Arquivos atualizados para a versao: $NEW_VERSION"
         echo "plugin-cerca-eletronica-$(NEW_VERSION).xml"
         echo "plugin-cerca-eletronica-$(NEW_VERSION).zip"
