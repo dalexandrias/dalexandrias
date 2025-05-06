@@ -1,7 +1,7 @@
 # Daee! Eu sou Davi Alexandrias 👋
 
 - 👩‍💻 Desenvolvedor BackEnd apaixonado por tecnologia e inovação.
-- 🌱 Sempre estudando desenvolvimento de software, design parttner, microservice, cloud e se atualizando com os avancos da tecnologia.
+- 🌱 Sempre estudando desenvolvimento de software, design partner, microservice, cloud e se atualizando com os avancos da tecnologia.
 - ⚡ Gosto de resolver problemas complexos e concretizar ideias.
 
 ##
